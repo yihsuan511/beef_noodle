@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會員專區</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Microsoft JhengHei', sans-serif;
+      background: linear-gradient(135deg, #fff4e6, #ffe9cc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #ff6600;
+      margin-bottom: 24px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      display: block;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 15px;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: #ff944d;
+      outline: none;
+    }
+
+    input[disabled] {
+      background: #f5f5f5;
+      color: #aaa;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 24px;
+      background: linear-gradient(135deg, #ff6600, #ff9933);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 12px;
+    }
+
+    .login-link {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .login-link a {
+      color: #ff6600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+      color: #ff4400;
+    }
+
+    .loading {
+      text-align: center;
+      color: #ff6600;
+      font-size: 16px;
+    }
+
+    .error {
+      background: #ffe6e6;
+      color: #cc0000;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .success {
+      background: #e6ffe6;
+      color: #006600;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>會員資料編輯</h2>
+    
+    <!-- 載入中顯示 -->
+    <div id="loading" class="loading">載入中...</div>
+    
+    <!-- 錯誤訊息 -->
+    <div id="errorMessage" class="error" style="display: none;"></div>
+    
+    <!-- 成功訊息 -->
+    <div id="successMessage" class="success" style="display: none;"></div>
+    
+    <!-- 表單 -->
+    <form id="memberForm" style="display: none;">
+      <!-- <label>會員ID（不可修改）</label>-->
+      <!-- <input type="text" id="member_id" disabled> -->
+
+      <label>姓名</label>
+      <input type="text" id="name" required>
+
+      <!-- <label>Email</label>
+      <input type="email" id="email" required> -->
+
+      <label>密碼（如需修改）</label>
+      <input type="password" id="password" placeholder="輸入新密碼（空白表示不修改）">
+
+      <label>電話 </label>
+      <input type="text" id="phone">
+
+      <button type="submit" id="saveButton">儲存變更</button>
+    </form>
+    
+    <div class="note">若有問題請聯絡客服</div>
+    <div class="login-link">
+      已有帳號？
+      <a href="原點餐系統.html">返回登入</a>
+    </div>
+  </div>
+
+  <script>
+    // 全域變數
+    let currentMemberData = null;
+
+    // 從URL參數或session中獲取會員ID
+    function getMemberId() {
+      // 方法1: 從URL參數獲取
+      const urlParams = new URLSearchParams(window.location.search);
+      const memberPhoneFromUrl = urlParams.get('phone');
+      
+      // 方法2: 從sessionStorage獲取（登入後儲存）
+      const memberPhoneFromSession = sessionStorage.getItem('phone');
+      
+      // 方法3: 從localStorage獲取
+      const memberPhoneFromLocal = localStorage.getItem('phone');
+      
+      // 返回找到的會員電話，優先順序：URL > Session > Local
+      return memberPhoneFromUrl || memberPhoneFromSession || memberPhoneFromLocal;
+    }
+
+    // 載入會員資料
+    async function loadMemberData() {
+      const memberPhone = getMemberId();
+      
+      if (!memberPhone) {
+        showError('未找到會員電話，請重新登入');
+        return;
+      }
+
+      try {
+        // 這裡替換成您的API端點
+        const response = await fetch(`http://localhost:3000/members?phone=${phone}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // 如果需要身份驗證，加入token
+            // 'Authorization': 'Bearer ' + getAuthToken()
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const memberData = await response.json();
+        currentMemberData = memberData;
+        
+        // 填入表單資料
+        populateForm(memberData);
+        
+        // 隱藏載入中，顯示表單
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('memberForm').style.display = 'block';
+        
+      } catch (error) {
+        console.error('載入會員資料失敗:', error);
+        showError('載入會員資料失敗，請稍後再試');
+      }
+    }
+
+    // 填入表單資料
+    function populateForm(memberData) {
+      // document.getElementById('member_id').value = memberData.id || '';
+      document.getElementById('name').value = memberData.name || '';
+      // document.getElementById('email').value = memberData.email || '';
+      document.getElementById('phone').value = memberData.phone || '';
+      // 密碼保持空白
+      document.getElementById('password').value = '';
+    }
+
+    // 儲存會員資料
+    async function saveMemberData(formData) {
+      const phone = getMemberId();
+      
+      try {
+        const response = await fetch(`http://localhost:3000/members?phone=${phone}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            // 如果需要身份驗證，加入token
+            // 'Authorization': 'Bearer ' + getAuthToken()
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        showSuccess('資料更新成功！');
+        
+        // 更新當前資料
+        currentMemberData = { ...currentMemberData, ...formData };
+        
+        return result;
+        
+      } catch (error) {
+        console.error('儲存會員資料失敗:', error);
+        showError('儲存失敗，請稍後再試');
+        throw error;
+      }
+    }
+
+    // 顯示錯誤訊息
+    function showError(message) {
+      const errorDiv = document.getElementById('errorMessage');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+      document.getElementById('successMessage').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+    }
+
+    // 顯示成功訊息
+    function showSuccess(message) {
+      const successDiv = document.getElementById('successMessage');
+      successDiv.textContent = message;
+      successDiv.style.display = 'block';
+      document.getElementById('errorMessage').style.display = 'none';
+      
+      // 3秒後自動隱藏成功訊息
+      setTimeout(() => {
+        successDiv.style.display = 'none';
+      }, 3000);
+    }
+
+    // 表單提交處理
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('memberForm');
+      const saveButton = document.getElementById('saveButton');
+      
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // 禁用按鈕防止重複提交
+        saveButton.disabled = true;
+        saveButton.textContent = '儲存中...';
+        
+        try {
+          // 收集表單資料
+          const formData = {
+            name: document.getElementById('name').value.trim(),
+            // email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim()
+          };
+          
+          // 如果密碼不為空，加入密碼
+          const password = document.getElementById('password').value;
+          if (password) {
+            formData.password = password;
+          }
+          
+          // 基本驗證
+          if (!formData.name) {
+            showError('姓名不能為空');
+            return;
+          }
+          
+          if (!formData.email) {
+            showError('Email不能為空');
+            return;
+          }
+          
+          // Email格式驗證
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(formData.email)) {
+            showError('Email格式不正確');
+            return;
+          }
+          
+          // 儲存資料
+          await saveMemberData(formData);
+          
+          // 清空密碼欄位
+          document.getElementById('password').value = '';
+          
+        } catch (error) {
+          // 錯誤已在saveMemberData中處理
+        } finally {
+          // 恢復按鈕狀態
+          saveButton.disabled = false;
+          saveButton.textContent = '儲存變更';
+        }
+      });
+      
+      // 載入會員資料
+      loadMemberData();
+    });
+
+    // 獲取認證token（如果需要）
+    function getAuthToken() {
+      return sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+    }
+
+    // 示例：如果沒有後端API，可以使用這個模擬函數進行測試
+    function simulateApiCall() {
+      // 模擬會員資料
+      const mockMemberData = {
+        id: 'user123',
+        name: '王小明',
+        email: 'test@example.com',
+        phone: '0912345678'
+      };
+      
+      // 模擬延遲
+      setTimeout(() => {
+        currentMemberData = mockMemberData;
+        populateForm(mockMemberData);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('memberForm').style.display = 'block';
+      }, 1000);
+    }
+
+    // 如果要使用模擬資料進行測試，可以取消下面這行的註釋
+    // 並註釋掉 DOMContentLoaded 事件監聽器中的 loadMemberData() 調用
+    // simulateApiCall();
+  </script>
+</body>
+</html>
