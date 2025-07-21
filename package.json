@@ -5,7 +5,7 @@
   "main": "member.js",
   "scripts": {
     "start": "node member.js",
-    "dev": "nodemon memeber.js"
+    "dev": "nodemon member.js"
   },
   "keywords": [],
   "author": "",
