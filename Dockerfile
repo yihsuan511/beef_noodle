@@ -24,5 +24,5 @@ COPY . .
 EXPOSE 3000
 
 # 定義容器啟動時執行的命令
-# 這裡假設您的主應用程式檔案是 server.js
-CMD ["node", "server.js"]
+# 這裡假設您的主應用程式檔案是 member.js
+CMD ["node", "member.js"]
